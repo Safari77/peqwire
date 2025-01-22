@@ -95,6 +95,9 @@ combined_db = f"{np.max(G_total_db):.2f}"
 result = f'Combined EQ Frequency Response {freqstart}–{freqend} Hz: {combined_db} dB'
 print(result)
 
+plt.rcParams.update({'font.size': 10})
+plt.rcParams['figure.dpi'] = 300
+
 plt.semilogx(freqs, G_total_db)
 plt.title(result)
 plt.xlabel('Frequency (Hz)')
