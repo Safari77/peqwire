@@ -72,7 +72,9 @@ def parse_peq_file(filename):
 
     filter_type_map = {
         'LSC': 'low_shelf',
+        'LS': 'low_shelf',
         'HSC': 'high_shelf',
+        'HS': 'high_shelf',
         'PK': 'peaking'
     }
 
@@ -126,9 +128,18 @@ def parse_peq_file(filename):
 
                     # Extract Q
                     q_match = re.search(r'Q\s+([-+]?\d+\.?\d*)', line)
-                    if not q_match:
-                        continue
-                    Q = float(q_match.group(1))
+                    if q_match:
+                        Q = float(q_match.group(1))
+                    else:
+                        # If Q is missing:
+                        # PK filters usually require Q, but shelves (LS/HS) might not.
+                        # Default for LS/HS is 0.707 (Butterworth)
+                        if raw_type in ['LS', 'HS', 'LSC', 'HSC']:
+                            Q = 0.707
+                        else:
+                            # If it's a Peak filter without Q, we skip or default (skipping is safer)
+                            print(f"Warning: Skipping Filter (PK without Q): {line}")
+                            continue
 
                     # Add to bands: (type, fc, gain_db, Q)
                     bands.append((ftype, fc, gain_db, Q))
@@ -230,7 +241,7 @@ if __name__ == "__main__":
     else:
         actual_post_gain = safe_post_gain_db
 
-    result = f'Combined EQ Frequency Response {freqstart}–{freqend} Hz\nPre-atten: {pre_atten_db:.2f} dB\nSafe post-gain: {safe_post_gain_db:.2f} dB'
+    result = f'Combined EQ Frequency Response {freqstart}–{freqend} Hz\nPre-attenuation: {pre_atten_db:.2f} dB\nSafe post-gain: {safe_post_gain_db:.2f} dB'
 
     if postamp_db != 0.0:
         result += f' (File: {postamp_db:.1f} dB)'
@@ -250,6 +261,9 @@ if __name__ == "__main__":
     plt.title(result)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Gain (dB)')
-    plt.grid(True, which='both', ls='--')
+    plt.grid(True, which="both", ls="-", alpha=0.5)
+    plt.axhline(y=0, color='k', linestyle='-', alpha=0.3)
+    if preamp_db != 0:
+        plt.axhline(y=-preamp_db, color='r', linestyle='--', label='Current Preamp Limit')
     plt.tight_layout()
     plt.show()
