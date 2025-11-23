@@ -91,9 +91,25 @@ for ftype, fc, Q, gain_db in bands:
     H_total *= h
 
 G_total_db = 20 * np.log10(np.abs(H_total))
-combined_db = f"{np.max(G_total_db):.2f}"
-result = f'Combined EQ Frequency Response {freqstart}–{freqend} Hz: {combined_db} dB'
+max_gain_db = np.max(G_total_db)
+min_gain_db = np.min(G_total_db)
+
+# Pre-attenuation needed to prevent clipping from EQ boost
+pre_atten_db = max_gain_db + 0.1  # Adding 0.1 dB safety margin
+
+# After pre-attenuation and EQ, how much can we safely amplify?
+# The range after pre-atten becomes: [min_gain - max_gain, 0]
+# So we can amplify by up to: max_gain - min_gain
+safe_post_gain_db = max_gain_db - min_gain_db
+
+combined_db = f"{pre_atten_db:.2f}"
+result = f'Combined EQ Frequency Response {freqstart}–{freqend} Hz\nPre-atten: {combined_db} dB\nSafe post-gain: {safe_post_gain_db:.2f} dB'
 print(result)
+print(f"\nSummary:")
+print(f"  Max boost in EQ: {max_gain_db:.2f} dB")
+print(f"  Max cut in EQ: {min_gain_db:.2f} dB")
+print(f"  Required pre-attenuation: {pre_atten_db:.2f} dB")
+print(f"  Safe post-EQ amplification: {safe_post_gain_db:.2f} dB")
 
 plt.rcParams.update({'font.size': 10})
 plt.rcParams['figure.dpi'] = 300
@@ -103,4 +119,5 @@ plt.title(result)
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('Gain (dB)')
 plt.grid(True, which='both', ls='--')
+plt.tight_layout()
 plt.show()
